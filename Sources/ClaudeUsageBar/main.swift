@@ -135,7 +135,7 @@ func resetText(_ iso: String?) -> String {
         fmt.dateStyle = .none
         fmt.timeStyle = .short
     } else {
-        fmt.dateFormat = "EEE h a"
+        fmt.setLocalizedDateFormatFromTemplate("EEE j")
     }
     return "  ·  resets \(fmt.string(from: date))"
 }
@@ -157,6 +157,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         timer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             self?.refresh()
         }
+        timer?.tolerance = 30
     }
 
     @objc func refresh() {
