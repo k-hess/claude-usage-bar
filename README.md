@@ -11,7 +11,7 @@ The number in the bar is whichever limit is closest to capping you (max across y
 Requires macOS 13+, Xcode Command Line Tools (`xcode-select --install`), and a logged-in [Claude Code](https://claude.com/claude-code).
 
 ```sh
-git clone https://github.com/parkerstreet/claude-usage-bar.git
+git clone https://github.com/k-hess/claude-usage-bar.git
 cd claude-usage-bar
 make install
 ```
