@@ -2,18 +2,7 @@
 
 A tiny macOS menu bar app that shows your Claude Code usage limits — the same numbers as `/usage`, without opening a session to check.
 
-```
-menu bar:   CC 42%
-
-click:      Session (5h):   42%  ·  resets 3:00 PM
-            Week (all):     31%  ·  resets Mon 9 PM
-            Week (Sonnet):  18%  ·  resets Mon 9 PM
-            ─────────────────────
-            Refresh now
-            Launch at login  ✓
-            ─────────────────────
-            Quit
-```
+<img src="docs/screenshot.png" alt="ClaudeUsageBar in the menu bar with its dropdown open" width="560">
 
 The number in the bar is whichever limit is closest to capping you (max across your session and weekly buckets). At 80%+ it shows a ⚠️.
 
