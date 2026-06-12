@@ -60,17 +60,26 @@ enum FetchError: Error, CustomStringConvertible {
 
 // MARK: - Credentials + fetch
 
+// Reads via /usr/bin/security rather than SecItemCopyMatching: the credential
+// item's partition list only trusts Apple-signed tools, and this app is ad-hoc
+// signed (no Team ID), so a direct read re-prompts for the keychain password on
+// every poll — "Always Allow" can never stick. Apple's own tool passes silently.
 func readAccessToken() throws -> String {
-    let query: [String: Any] = [
-        kSecClass as String: kSecClassGenericPassword,
-        kSecAttrService as String: "Claude Code-credentials",
-        kSecReturnData as String: true,
-        kSecMatchLimit as String: kSecMatchLimitOne,
-    ]
-    var item: CFTypeRef?
-    let status = SecItemCopyMatching(query as CFDictionary, &item)
-    guard status == errSecSuccess, let data = item as? Data else {
-        throw FetchError.keychain(status)
+    let proc = Process()
+    proc.executableURL = URL(fileURLWithPath: "/usr/bin/security")
+    proc.arguments = ["find-generic-password", "-s", "Claude Code-credentials", "-w"]
+    let stdout = Pipe()
+    proc.standardOutput = stdout
+    proc.standardError = FileHandle.nullDevice
+    do {
+        try proc.run()
+    } catch {
+        throw FetchError.network(error.localizedDescription)
+    }
+    let data = stdout.fileHandleForReading.readDataToEndOfFile()
+    proc.waitUntilExit()
+    guard proc.terminationStatus == 0 else {
+        throw FetchError.keychain(proc.terminationStatus)
     }
     guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
           let oauth = obj["claudeAiOauth"] as? [String: Any],
@@ -161,6 +170,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func refresh() {
+        // The keychain read is a blocking subprocess call — keep it off the main
+        // thread or the menu renders blank while it waits.
+        DispatchQueue.global(qos: .utility).async {
+            self.fetch()
+        }
+    }
+
+    private func fetch() {
         fetchUsage { [weak self] result in
             DispatchQueue.main.async {
                 guard let self else { return }

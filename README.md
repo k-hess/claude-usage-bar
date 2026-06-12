@@ -16,13 +16,13 @@ cd claude-usage-bar
 make install
 ```
 
-That builds the app, installs it to `/Applications`, and launches it. On first run macOS asks to let ClaudeUsageBar read the `Claude Code-credentials` Keychain item — click **Always Allow**. (If you rebuild later, macOS re-prompts: the ad-hoc code signature changes with every build.)
+That builds the app, installs it to `/Applications`, and launches it. No permission prompts, no setup — it reads the token the same way Claude Code itself does.
 
 Turn on **Launch at login** from the dropdown if you want it to survive reboots.
 
 ## How it works
 
-- Reads the OAuth token Claude Code already stores in your macOS Keychain. No separate login, no API key to configure.
+- Reads the OAuth token Claude Code already stores in your macOS Keychain, via Apple's `/usr/bin/security` tool — the same path Claude Code uses. (The Keychain item's partition list only trusts Apple-signed tools, so an ad-hoc-signed app reading it directly triggers a keychain password prompt on every poll; going through `security` avoids that.) No separate login, no API key to configure.
 - Calls `GET https://api.anthropic.com/api/oauth/usage` — the endpoint behind `/usage` — every 5 minutes, plus on demand via **Refresh now**.
 - Renders whichever limit buckets your plan has (session 5h, weekly all-models, weekly Opus/Sonnet). Buckets the API returns as null are hidden.
 
@@ -32,7 +32,7 @@ If the token expires (401), the bar shows `CC –` with "Token stale — open Cl
 
 Worth being explicit, since this app touches your Claude credentials:
 
-- The token is read from the Keychain into memory and sent to exactly one place: `api.anthropic.com`, over HTTPS, in the `Authorization` header.
+- The token is read from the Keychain into memory (via a `/usr/bin/security` subprocess, output captured over a pipe) and sent to exactly one place: `api.anthropic.com`, over HTTPS, in the `Authorization` header.
 - It is never logged, never written to disk, never placed in a URL.
 - There is no telemetry, no analytics, and no other network call. The whole app is one Swift file — [read it](Sources/ClaudeUsageBar/main.swift).
 
@@ -41,8 +41,6 @@ Worth being explicit, since this app touches your Claude credentials:
 ```sh
 make uninstall
 ```
-
-Then remove the Keychain access grant if you like (Keychain Access → search "Claude Code-credentials" → Access Control).
 
 ## License
 
